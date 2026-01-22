@@ -1,0 +1,18 @@
+# Grafana Datasources Provisioning
+# falcon-gateway/configs/grafana/provisioning/datasources/datasources.yml
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://falcon-prometheus:9090
+    isDefault: true
+    editable: false
+
+  # Add more datasources as needed
+  # - name: Loki
+  #   type: loki
+  #   access: proxy
+  #   url: http://falcon-loki:3100

@@ -1,0 +1,100 @@
+# Traefik Dynamic Routing Configuration
+# falcon-gateway/configs/traefik/dynamic/routes.yml
+
+http:
+  # ============================================
+  # ROUTERS
+  # ============================================
+  routers:
+    # Landing page / Website
+    website:
+      rule: "Host(`localhost`) || Host(`falcon.localhost`)"
+      service: website-svc
+      entryPoints:
+        - web
+
+    # Traefik Dashboard (internal)
+    traefik-api:
+      rule: "Host(`traefik.localhost`)"
+      service: api@internal
+      entryPoints:
+        - web
+
+    # Consul UI
+    consul:
+      rule: "Host(`consul.localhost`)"
+      service: consul-svc
+      entryPoints:
+        - web
+
+    # Prometheus
+    prometheus:
+      rule: "Host(`prometheus.localhost`)"
+      service: prometheus-svc
+      entryPoints:
+        - web
+
+    # Grafana
+    grafana:
+      rule: "Host(`grafana.localhost`)"
+      service: grafana-svc
+      entryPoints:
+        - web
+
+    # Falcon Dashboard (when deployed)
+    # dashboard:
+    #   rule: "Host(`dashboard.falcon.localhost`)"
+    #   service: dashboard-svc
+    #   entryPoints:
+    #     - web
+
+  # ============================================
+  # SERVICES
+  # ============================================
+  services:
+    website-svc:
+      loadBalancer:
+        servers:
+          - url: "http://falcon-website:80"
+
+    consul-svc:
+      loadBalancer:
+        servers:
+          - url: "http://falcon-consul:8500"
+
+    prometheus-svc:
+      loadBalancer:
+        servers:
+          - url: "http://falcon-prometheus:9090"
+
+    grafana-svc:
+      loadBalancer:
+        servers:
+          - url: "http://falcon-grafana:3000"
+
+    # Falcon Dashboard (update IP for your setup)
+    # dashboard-svc:
+    #   loadBalancer:
+    #     servers:
+    #       - url: "http://192.168.1.162:5000"
+
+  # ============================================
+  # MIDDLEWARES
+  # ============================================
+  middlewares:
+    # Rate limiting
+    ratelimit:
+      rateLimit:
+        average: 100
+        burst: 50
+        period: 1m
+
+    # Security headers
+    secure-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        frameDeny: true

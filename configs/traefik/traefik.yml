@@ -1,0 +1,50 @@
+# Traefik Static Configuration
+# falcon-gateway/configs/traefik/traefik.yml
+
+api:
+  dashboard: true
+  insecure: true  # Set to false in production with proper auth
+
+entryPoints:
+  web:
+    address: ":80"
+    # Uncomment for automatic HTTPS redirect in production
+    # http:
+    #   redirections:
+    #     entryPoint:
+    #       to: websecure
+    #       scheme: https
+  websecure:
+    address: ":443"
+  traefik:
+    address: ":8080"
+
+providers:
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+# Uncomment for Let's Encrypt in production
+# certificatesResolvers:
+#   letsencrypt:
+#     acme:
+#       email: ${ACME_EMAIL}
+#       storage: /certs/acme.json
+#       httpChallenge:
+#         entryPoint: web
+
+ping:
+  entryPoint: traefik
+
+log:
+  level: INFO
+  format: json
+
+accessLog:
+  format: json
+
+metrics:
+  prometheus:
+    addEntryPointsLabels: true
+    addServicesLabels: true
+    addRoutersLabels: true

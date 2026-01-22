@@ -1,0 +1,39 @@
+# redis.container
+# Redis message queue for Falcon Gateway
+#
+# Location:
+#   - Local dev: ~/.config/containers/systemd/
+#   - Production: /etc/containers/systemd/
+
+[Unit]
+Description=Redis Message Queue (Falcon Gateway)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/redis:7-alpine
+ContainerName=falcon-redis
+Network=falcon.network
+PublishPort=6379:6379
+Volume=falcon-redis-data:/data:Z
+
+# Redis config: AOF persistence, memory limit
+Exec=redis-server --appendonly yes --maxmemory 100mb --maxmemory-policy allkeys-lru
+
+# Labels
+Label=project=falcon
+Label=service=redis
+
+# Health check
+HealthCmd=redis-cli ping
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target default.target

@@ -1,0 +1,40 @@
+# consul.container
+# Consul service discovery for Falcon Gateway
+#
+# Location:
+#   - Local dev: ~/.config/containers/systemd/
+#   - Production: /etc/containers/systemd/
+
+[Unit]
+Description=Consul Service Discovery (Falcon Gateway)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/hashicorp/consul:1.18
+ContainerName=falcon-consul
+Network=falcon.network
+PublishPort=8500:8500
+PublishPort=8600:8600/udp
+Volume=falcon-consul-data:/consul/data:Z
+
+# Dev mode for single-node; use server mode for production cluster
+Exec=agent -dev -ui -client=0.0.0.0 -bind=0.0.0.0
+
+# Labels
+Label=project=falcon
+Label=service=consul
+
+# Health check
+HealthCmd=consul members
+HealthInterval=15s
+HealthTimeout=5s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target default.target

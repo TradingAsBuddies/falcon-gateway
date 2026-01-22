@@ -1,0 +1,13 @@
+# falcon.network
+# Quadlet network definition for Falcon Gateway
+# 
+# Location:
+#   - Local dev: ~/.config/containers/systemd/
+#   - Production: /etc/containers/systemd/
+
+[Network]
+Subnet=10.89.0.0/24
+Gateway=10.89.0.1
+Driver=bridge
+Label=project=falcon
+Label=component=gateway

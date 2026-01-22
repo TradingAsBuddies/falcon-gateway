@@ -1,0 +1,39 @@
+# grafana.container
+# Grafana dashboards for Falcon Gateway
+#
+# Location:
+#   - Local dev: ~/.config/containers/systemd/
+#   - Production: /etc/containers/systemd/
+
+[Unit]
+Description=Grafana Dashboards (Falcon Gateway)
+After=prometheus.service
+
+[Container]
+Image=docker.io/grafana/grafana:10.2.0
+ContainerName=falcon-grafana
+Network=falcon.network
+
+# Port
+PublishPort=3000:3000
+
+# Data and provisioning
+Volume=falcon-grafana-data:/var/lib/grafana:Z
+# For production, also mount provisioning:
+# Volume=/etc/falcon/grafana/provisioning:/etc/grafana/provisioning:ro
+
+# Environment
+Environment=GF_SECURITY_ADMIN_PASSWORD=falcon123
+Environment=GF_USERS_ALLOW_SIGN_UP=false
+
+# Labels
+Label=project=falcon
+Label=service=grafana
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target default.target

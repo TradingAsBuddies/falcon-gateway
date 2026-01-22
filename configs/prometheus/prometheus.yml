@@ -1,0 +1,87 @@
+# Prometheus Configuration
+# falcon-gateway/configs/prometheus/prometheus.yml
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: falcon
+    environment: ${ENVIRONMENT:-dev}
+
+# Alerting configuration (uncomment when Alertmanager is added)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# Rule files
+# rule_files:
+#   - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: prometheus
+
+  # Traefik metrics
+  - job_name: 'traefik'
+    static_configs:
+      - targets: ['falcon-traefik:8080']
+        labels:
+          service: traefik
+
+  # Consul metrics
+  - job_name: 'consul'
+    metrics_path: /v1/agent/metrics
+    params:
+      format: ['prometheus']
+    static_configs:
+      - targets: ['falcon-consul:8500']
+        labels:
+          service: consul
+
+  # Redis metrics (requires redis_exporter sidecar)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+  #       labels:
+  #         service: redis
+
+  # ===========================================
+  # Falcon Platform Services (Production)
+  # ===========================================
+
+  # Node Exporter on Falcon hosts
+  # - job_name: 'falcon-nodes'
+  #   static_configs:
+  #     - targets: ['192.168.1.162:9100']
+  #       labels:
+  #         node: falcon-web
+  #     - targets: ['192.168.1.232:9100']
+  #       labels:
+  #         node: falcon-compute
+  #     - targets: ['192.168.1.194:9100']
+  #       labels:
+  #         node: falcon-db
+  #     - targets: ['192.168.1.233:9100']
+  #       labels:
+  #         node: falcon-gateway
+
+  # Falcon Dashboard metrics
+  # - job_name: 'falcon-dashboard'
+  #   static_configs:
+  #     - targets: ['192.168.1.162:5000']
+  #       labels:
+  #         service: falcon-dashboard
+  #   metrics_path: /metrics
+
+  # PostgreSQL metrics
+  # - job_name: 'postgresql'
+  #   static_configs:
+  #     - targets: ['192.168.1.194:9187']
+  #       labels:
+  #         service: postgresql

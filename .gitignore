@@ -1,0 +1,53 @@
+# Secrets and certificates
+*.pem
+*.key
+*.crt
+acme.json
+.env
+.env.*
+!.env.example
+
+# Local data directories
+data/
+*.db
+*.sqlite
+
+# Podman/Docker
+*.tar
+*.gz
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.sublime-*
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Python (if any scripts)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+venv/
+.venv/
+
+# Node (if any tooling)
+node_modules/
+
+# Local development overrides
+configs/traefik/dynamic/local-*.yml
+configs/local/

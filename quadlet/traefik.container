@@ -1,0 +1,45 @@
+# traefik.container
+# Traefik API Gateway for Falcon Gateway
+#
+# Location:
+#   - Local dev: ~/.config/containers/systemd/
+#   - Production: /etc/containers/systemd/
+
+[Unit]
+Description=Traefik API Gateway (Falcon Gateway)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/traefik:v3.2
+ContainerName=falcon-traefik
+Network=falcon.network
+
+# Ports
+PublishPort=80:80
+PublishPort=443:443
+PublishPort=8080:8080
+
+# Configuration volumes
+# Local: uses Podman volumes
+# Production: mount from /etc/falcon/traefik
+Volume=falcon-traefik-config:/etc/traefik:ro
+Volume=falcon-traefik-certs:/certs
+
+# Labels
+Label=project=falcon
+Label=service=traefik
+
+# Health check
+HealthCmd=wget -q --spider http://localhost:8080/ping || exit 1
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target default.target

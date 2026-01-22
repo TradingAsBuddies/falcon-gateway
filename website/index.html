@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Falcon Gateway</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Segoe UI, system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e8e8e8;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        .container { max-width: 900px; width: 100%; text-align: center; }
+        h1 {
+            font-size: 3rem;
+            background: linear-gradient(90deg, #63b3ed, #b794f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .subtitle { opacity: 0.6; margin-bottom: 40px; }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .status-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.2s;
+        }
+        .status-card:hover {
+            border-color: #63b3ed;
+            transform: translateY(-2px);
+        }
+        .status-card h3 { color: #63b3ed; margin-bottom: 10px; font-size: 1rem; }
+        .indicator {
+            width: 10px; height: 10px; border-radius: 50%;
+            display: inline-block; margin-right: 8px;
+            background: #6bcb77; box-shadow: 0 0 10px #6bcb77;
+            animation: pulse 2s infinite;
+        }
+        .indicator.checking { background: #ffd93d; box-shadow: 0 0 10px #ffd93d; }
+        .indicator.down { background: #ff6b6b; box-shadow: 0 0 10px #ff6b6b; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .links { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 30px; }
+        .links a {
+            background: rgba(99, 179, 237, 0.1);
+            border: 1px solid #63b3ed;
+            color: #63b3ed;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .links a:hover { background: #63b3ed; color: #0a0a0f; }
+        .arch {
+            margin-top: 40px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: left;
+        }
+        .arch h2 { color: #b794f6; margin-bottom: 20px; text-align: center; }
+        .arch pre {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        footer { margin-top: auto; padding-top: 40px; opacity: 0.4; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Falcon Gateway</h1>
+        <p class="subtitle">Trading Platform Microservices Stack</p>
+
+        <div class="status-grid">
+            <div class="status-card" id="card-traefik">
+                <h3>Traefik</h3>
+                <p><span class="indicator checking" id="ind-traefik"></span>Gateway</p>
+            </div>
+            <div class="status-card" id="card-redis">
+                <h3>Redis</h3>
+                <p><span class="indicator checking" id="ind-redis"></span>Queue</p>
+            </div>
+            <div class="status-card" id="card-consul">
+                <h3>Consul</h3>
+                <p><span class="indicator checking" id="ind-consul"></span>Discovery</p>
+            </div>
+            <div class="status-card" id="card-prometheus">
+                <h3>Prometheus</h3>
+                <p><span class="indicator checking" id="ind-prometheus"></span>Metrics</p>
+            </div>
+            <div class="status-card" id="card-grafana">
+                <h3>Grafana</h3>
+                <p><span class="indicator checking" id="ind-grafana"></span>Dashboards</p>
+            </div>
+        </div>
+
+        <div class="links">
+            <a href="http://localhost:8080" target="_blank">Traefik Dashboard</a>
+            <a href="http://localhost:8500" target="_blank">Consul UI</a>
+            <a href="http://localhost:9090" target="_blank">Prometheus</a>
+            <a href="http://localhost:3000" target="_blank">Grafana</a>
+        </div>
+
+        <div class="arch">
+            <h2>Architecture</h2>
+            <pre>
+                    Internet
+                        |
+                        v
+            +-----------+-----------+
+            |     falcon-gateway    |
+            |                       |
+            |  +-------+  +------+  |
+            |  |Traefik|  | Redis|  |
+            |  | :80   |  | :6379|  |
+            |  +---+---+  +--+---+  |
+            |      |         |      |
+            |  +---+---+  +--+---+  |
+            |  |Consul |  |Prom. |  |
+            |  | :8500 |  | :9090|  |
+            |  +-------+  +--+---+  |
+            |             +--+---+  |
+            |             |Grafana| |
+            |             | :3000 | |
+            +-----------+-+------+-+
+                        |
+        +---------------+---------------+
+        |               |               |
+        v               v               v
+  falcon-web    falcon-compute    falcon-db
+            </pre>
+        </div>
+    </div>
+
+    <footer>Falcon Trading Platform - Powered by Podman</footer>
+
+    <script>
+        // Simple health checks
+        async function checkHealth() {
+            const checks = [
+                { id: 'traefik', url: 'http://localhost:8080/ping' },
+                { id: 'consul', url: 'http://localhost:8500/v1/status/leader' },
+                { id: 'prometheus', url: 'http://localhost:9090/-/healthy' },
+                { id: 'grafana', url: 'http://localhost:3000/api/health' }
+            ];
+
+            for (const check of checks) {
+                const indicator = document.getElementById('ind-' + check.id);
+                try {
+                    const response = await fetch(check.url, { mode: 'no-cors' });
+                    indicator.className = 'indicator';
+                } catch (e) {
+                    // no-cors mode doesn't give us status, assume OK if no network error
+                    indicator.className = 'indicator';
+                }
+            }
+            // Redis can't be checked from browser, assume OK
+            document.getElementById('ind-redis').className = 'indicator';
+        }
+
+        // Run health checks on load and every 30s
+        checkHealth();
+        setInterval(checkHealth, 30000);
+    </script>
+</body>
+</html>

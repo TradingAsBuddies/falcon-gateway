@@ -1,0 +1,44 @@
+# prometheus.container
+# Prometheus metrics for Falcon Gateway
+#
+# Location:
+#   - Local dev: ~/.config/containers/systemd/
+#   - Production: /etc/containers/systemd/
+
+[Unit]
+Description=Prometheus Metrics (Falcon Gateway)
+After=network-online.target traefik.service
+Wants=network-online.target
+
+[Container]
+Image=docker.io/prom/prometheus:v2.48.0
+ContainerName=falcon-prometheus
+Network=falcon.network
+
+# Port
+PublishPort=9090:9090
+
+# Configuration and data
+Volume=falcon-prometheus-config:/etc/prometheus:ro
+Volume=falcon-prometheus-data:/prometheus:Z
+
+# Prometheus startup args
+Exec=--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.time=15d --web.enable-lifecycle
+
+# Labels
+Label=project=falcon
+Label=service=prometheus
+
+# Health check
+HealthCmd=wget -q --spider http://localhost:9090/-/healthy || exit 1
+HealthInterval=15s
+HealthTimeout=5s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target default.target
