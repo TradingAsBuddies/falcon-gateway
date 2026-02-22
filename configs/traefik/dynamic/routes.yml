@@ -6,9 +6,16 @@ http:
   # ROUTERS
   # ============================================
   routers:
-    # Landing page / Website
-    website:
+    # Trading Portal (main site)
+    dashboard:
       rule: "Host(`localhost`) || Host(`falcon.localhost`)"
+      service: dashboard-svc
+      entryPoints:
+        - web
+
+    # Infrastructure Admin (status page)
+    admin:
+      rule: "Host(`admin.falcon.localhost`)"
       service: website-svc
       entryPoints:
         - web
@@ -41,13 +48,6 @@ http:
       entryPoints:
         - web
 
-    # Falcon Dashboard (when deployed)
-    # dashboard:
-    #   rule: "Host(`dashboard.falcon.localhost`)"
-    #   service: dashboard-svc
-    #   entryPoints:
-    #     - web
-
   # ============================================
   # SERVICES
   # ============================================
@@ -72,11 +72,10 @@ http:
         servers:
           - url: "http://falcon-grafana:3000"
 
-    # Falcon Dashboard (update IP for your setup)
-    # dashboard-svc:
-    #   loadBalancer:
-    #     servers:
-    #       - url: "http://192.168.1.162:5000"
+    dashboard-svc:
+      loadBalancer:
+        servers:
+          - url: "http://falcon-dashboard:5000"
 
   # ============================================
   # MIDDLEWARES

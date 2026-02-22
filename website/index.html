@@ -63,6 +63,18 @@
             transition: all 0.2s;
         }
         .links a:hover { background: #63b3ed; color: #0a0a0f; }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #b794f6;
+            text-decoration: none;
+            font-size: 0.95rem;
+            border: 1px solid #b794f6;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .back-link:hover { background: #b794f6; color: #0a0a0f; }
         .arch {
             margin-top: 40px;
             background: rgba(255,255,255,0.02);
@@ -84,8 +96,9 @@
 </head>
 <body>
     <div class="container">
+        <a href="http://falcon.localhost" class="back-link">Back to Trading Portal</a>
         <h1>Falcon Gateway</h1>
-        <p class="subtitle">Trading Platform Microservices Stack</p>
+        <p class="subtitle">Infrastructure Admin - Microservices Stack</p>
 
         <div class="status-grid">
             <div class="status-card" id="card-traefik">
