@@ -21,7 +21,7 @@ $ErrorActionPreference = "Stop"
 
 # Configuration
 $FalconRoot = "$env:USERPROFILE\falcon-dev"
-$ContainerNames = @("falcon-redis", "falcon-consul", "falcon-traefik", "falcon-prometheus", "falcon-grafana", "falcon-website")
+$ContainerNames = @("falcon-postgresql", "falcon-postgres-exporter", "falcon-redis", "falcon-consul", "falcon-traefik", "falcon-prometheus", "falcon-grafana", "falcon-website")
 $VolumeNames = @(
     "falcon-redis-data",
     "falcon-consul-data",
@@ -30,7 +30,9 @@ $VolumeNames = @(
     "falcon-prometheus-config",
     "falcon-prometheus-data",
     "falcon-grafana-data",
-    "falcon-website-content"
+    "falcon-website-content",
+    "falcon-postgresql-data",
+    "falcon-postgresql-init"
 )
 
 function Write-Info { param($msg) Write-Host "[INFO] $msg" -ForegroundColor Cyan }
@@ -69,6 +71,7 @@ function Initialize-Directories {
     $dirs = @(
         "$FalconRoot\traefik\dynamic",
         "$FalconRoot\prometheus",
+        "$FalconRoot\postgresql\init",
         "$FalconRoot\website"
     )
     
@@ -201,6 +204,17 @@ scrape_configs:
 "@
     $promYml | Out-File -FilePath "$FalconRoot\prometheus\prometheus.yml" -Encoding UTF8
 
+    # PostgreSQL init SQL
+    $pgInitSql = @"
+-- Runs once on first container start (empty data volume)
+CREATE DATABASE finviz;
+GRANT ALL PRIVILEGES ON DATABASE finviz TO falcon;
+ALTER SYSTEM SET shared_buffers = '128MB';
+ALTER SYSTEM SET effective_cache_size = '384MB';
+ALTER SYSTEM SET max_connections = 100;
+"@
+    $pgInitSql | Out-File -FilePath "$FalconRoot\postgresql\init\01-create-databases.sql" -Encoding UTF8
+
     # Demo website - create separately to avoid parsing issues
     Create-WebsiteHtml
     
@@ -300,6 +314,10 @@ function Create-WebsiteHtml {
                 <h3>Grafana</h3>
                 <p><span class="indicator"></span>Dashboards</p>
             </div>
+            <div class="status-card">
+                <h3>PostgreSQL</h3>
+                <p><span class="indicator"></span>Database</p>
+            </div>
         </div>
 
         <div class="links">
@@ -344,6 +362,9 @@ function Copy-ConfigsToVolumes {
     # Website content
     podman run --rm -v "falcon-website-content:/content" -v "${sourcePath}/website:/source:ro" alpine sh -c "cp /source/* /content/ 2>/dev/null; exit 0" 2>$null
     
+    # PostgreSQL init scripts
+    podman run --rm -v "falcon-postgresql-init:/config" -v "${sourcePath}/postgresql/init:/source:ro" alpine sh -c "cp /source/* /config/ 2>/dev/null; exit 0" 2>$null
+
     # Init acme.json
     podman run --rm -v "falcon-traefik-certs:/certs" alpine sh -c "touch /certs/acme.json; chmod 600 /certs/acme.json" 2>$null
     
@@ -364,6 +385,20 @@ function Initialize-Network {
 function Start-FalconContainers {
     Write-Info "Starting containers..."
     
+    # PostgreSQL
+    $running = podman ps --format "{{.Names}}" 2>$null | Where-Object { $_ -eq "falcon-postgresql" }
+    if (-not $running) {
+        Write-Host "  Starting PostgreSQL..." -ForegroundColor Gray
+        podman run -d --name falcon-postgresql --network falcon -p 5432:5432 -v falcon-postgresql-data:/var/lib/postgresql/data -v falcon-postgresql-init:/docker-entrypoint-initdb.d:ro -e POSTGRES_USER=falcon -e POSTGRES_DB=falcon -e POSTGRES_PASSWORD=falcon_secret --restart on-failure docker.io/postgres:16-alpine 2>$null | Out-Null
+    }
+
+    # PostgreSQL Exporter
+    $running = podman ps --format "{{.Names}}" 2>$null | Where-Object { $_ -eq "falcon-postgres-exporter" }
+    if (-not $running) {
+        Write-Host "  Starting PostgreSQL Exporter..." -ForegroundColor Gray
+        podman run -d --name falcon-postgres-exporter --network falcon -p 9187:9187 -e DATA_SOURCE_NAME="postgresql://falcon:falcon_secret@falcon-postgresql:5432/falcon?sslmode=disable" --restart on-failure docker.io/prometheuscommunity/postgres-exporter:v0.15.0 2>$null | Out-Null
+    }
+
     # Redis
     $running = podman ps --format "{{.Names}}" 2>$null | Where-Object { $_ -eq "falcon-redis" }
     if (-not $running) {
@@ -430,6 +465,19 @@ function Show-Status {
     Write-Host "Health Checks:" -ForegroundColor Cyan
     Write-Host ""
     
+    # PostgreSQL
+    try {
+        $result = podman exec falcon-postgresql pg_isready -U falcon -d falcon 2>$null
+        if ($LASTEXITCODE -eq 0) { Write-Success "PostgreSQL: HEALTHY (localhost:5432)" }
+        else { Write-Err "PostgreSQL: UNHEALTHY" }
+    } catch { Write-Err "PostgreSQL: NOT RUNNING" }
+
+    # PostgreSQL Exporter
+    try {
+        $null = Invoke-WebRequest -Uri "http://localhost:9187/metrics" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+        Write-Success "PG Exporter: HEALTHY (http://localhost:9187)"
+    } catch { Write-Err "PG Exporter: NOT RUNNING" }
+
     # Redis
     try {
         $result = podman exec falcon-redis redis-cli ping 2>$null
@@ -479,6 +527,8 @@ function Show-URLs {
     Write-Host "  Prometheus:         http://localhost:9090" -ForegroundColor White
     Write-Host "  Grafana:            http://localhost:3000  (admin/falcon123)" -ForegroundColor White
     Write-Host "  Redis:              localhost:6379" -ForegroundColor White
+    Write-Host "  PostgreSQL:         localhost:5432  (falcon/falcon_secret)" -ForegroundColor White
+    Write-Host "  PG Metrics:         http://localhost:9187/metrics" -ForegroundColor White
     Write-Host ""
 }
 

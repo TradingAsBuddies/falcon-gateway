@@ -11,6 +11,19 @@ datasources:
     isDefault: true
     editable: false
 
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: falcon-postgresql:5432
+    database: falcon
+    user: falcon
+    secureJsonData:
+      password: falcon_secret
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1600
+    editable: false
+
   # Add more datasources as needed
   # - name: Loki
   #   type: loki

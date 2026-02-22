@@ -1,0 +1,46 @@
+# postgresql.container
+# PostgreSQL database for Falcon Gateway
+#
+# Location:
+#   - Local dev: ~/.config/containers/systemd/
+#   - Production: /etc/containers/systemd/
+#
+# Secrets (create before first start):
+#   echo "falcon_secret" | podman secret create falcon-pg-password -
+
+[Unit]
+Description=PostgreSQL Database (Falcon Gateway)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/postgres:16-alpine
+ContainerName=falcon-postgresql
+Network=falcon.network
+PublishPort=5432:5432
+Volume=falcon-postgresql-data:/var/lib/postgresql/data:Z
+Volume=falcon-postgresql-init:/docker-entrypoint-initdb.d:ro
+
+# Environment
+Environment=POSTGRES_USER=falcon
+Environment=POSTGRES_DB=falcon
+Secret=falcon-pg-password,type=env,target=POSTGRES_PASSWORD
+
+# Labels
+Label=project=falcon
+Label=service=postgresql
+
+# Health check
+HealthCmd=pg_isready -U falcon -d falcon
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=30s
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target default.target

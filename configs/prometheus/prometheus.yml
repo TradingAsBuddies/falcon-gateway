@@ -79,9 +79,9 @@ scrape_configs:
   #         service: falcon-dashboard
   #   metrics_path: /metrics
 
-  # PostgreSQL metrics
-  # - job_name: 'postgresql'
-  #   static_configs:
-  #     - targets: ['192.168.1.194:9187']
-  #       labels:
-  #         service: postgresql
+  # PostgreSQL metrics (via postgres-exporter sidecar)
+  - job_name: 'postgresql'
+    static_configs:
+      - targets: ['falcon-postgres-exporter:9187']
+        labels:
+          service: postgresql

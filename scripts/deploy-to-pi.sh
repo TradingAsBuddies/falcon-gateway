@@ -29,7 +29,7 @@ echo "OK: Connected"
 # Create directories on Pi
 echo ""
 echo "[2/6] Creating directories..."
-ssh "$TARGET" "sudo mkdir -p /etc/falcon/{traefik/dynamic,prometheus,grafana/provisioning/datasources} /var/lib/falcon/{redis,consul,prometheus,grafana}"
+ssh "$TARGET" "sudo mkdir -p /etc/falcon/{traefik/dynamic,prometheus,grafana/provisioning/datasources,postgresql/init} /var/lib/falcon/{redis,consul,prometheus,grafana}"
 
 # Copy Quadlet files
 echo ""
@@ -44,12 +44,14 @@ scp "$REPO_DIR/configs/traefik/traefik.yml" "$TARGET:/tmp/"
 scp "$REPO_DIR/configs/traefik/dynamic/routes.yml" "$TARGET:/tmp/routes.yml"
 scp "$REPO_DIR/configs/prometheus/prometheus.yml" "$TARGET:/tmp/"
 scp "$REPO_DIR/configs/grafana/provisioning/datasources/datasources.yml" "$TARGET:/tmp/datasources.yml"
+scp "$REPO_DIR/configs/postgresql/init/"*.sql "$TARGET:/tmp/"
 
 ssh "$TARGET" "
     sudo mv /tmp/traefik.yml /etc/falcon/traefik/
     sudo mv /tmp/routes.yml /etc/falcon/traefik/dynamic/
     sudo mv /tmp/prometheus.yml /etc/falcon/prometheus/
     sudo mv /tmp/datasources.yml /etc/falcon/grafana/provisioning/datasources/
+    sudo mv /tmp/*.sql /etc/falcon/postgresql/init/
     sudo touch /etc/falcon/certs/acme.json
     sudo chmod 600 /etc/falcon/certs/acme.json
 "
@@ -65,6 +67,8 @@ echo ""
 echo "[6/6] Starting services..."
 ssh "$TARGET" "
     sudo systemctl daemon-reload
+    sudo systemctl enable --now falcon-postgresql.service
+    sudo systemctl enable --now falcon-postgres-exporter.service
     sudo systemctl enable --now falcon-redis.service
     sudo systemctl enable --now falcon-consul.service
     sudo systemctl enable --now falcon-traefik.service
@@ -90,4 +94,6 @@ echo "  Traefik:    http://${TARGET#*@}:8080"
 echo "  Consul:     http://${TARGET#*@}:8500"
 echo "  Prometheus: http://${TARGET#*@}:9090"
 echo "  Grafana:    http://${TARGET#*@}:3000"
+echo "  PostgreSQL: ${TARGET#*@}:5432"
+echo "  PG Metrics: http://${TARGET#*@}:9187/metrics"
 echo ""

@@ -108,6 +108,10 @@
                 <h3>Grafana</h3>
                 <p><span class="indicator checking" id="ind-grafana"></span>Dashboards</p>
             </div>
+            <div class="status-card" id="card-postgresql">
+                <h3>PostgreSQL</h3>
+                <p><span class="indicator checking" id="ind-postgresql"></span>Database</p>
+            </div>
         </div>
 
         <div class="links">
@@ -135,10 +139,11 @@
             |  |Consul |  |Prom. |  |
             |  | :8500 |  | :9090|  |
             |  +-------+  +--+---+  |
-            |             +--+---+  |
-            |             |Grafana| |
-            |             | :3000 | |
-            +-----------+-+------+-+
+            |  +-------+  +--+---+  |
+            |  |Postgre|  |Grafana| |
+            |  | :5432 |  | :3000 | |
+            |  +-------+  +------+  |
+            +-----------+-----------+
                         |
         +---------------+---------------+
         |               |               |
@@ -170,8 +175,9 @@
                     indicator.className = 'indicator';
                 }
             }
-            // Redis can't be checked from browser, assume OK
+            // Redis and PostgreSQL can't be checked from browser, assume OK
             document.getElementById('ind-redis').className = 'indicator';
+            document.getElementById('ind-postgresql').className = 'indicator';
         }
 
         // Run health checks on load and every 30s

@@ -1,0 +1,41 @@
+# postgres-exporter.container
+# Prometheus PostgreSQL Exporter for Falcon Gateway
+#
+# Location:
+#   - Local dev: ~/.config/containers/systemd/
+#   - Production: /etc/containers/systemd/
+#
+# Secrets (create before first start):
+#   echo "postgresql://falcon:falcon_secret@falcon-postgresql:5432/falcon?sslmode=disable" | podman secret create falcon-pg-dsn -
+
+[Unit]
+Description=PostgreSQL Exporter (Falcon Gateway)
+After=postgresql.service
+Requires=postgresql.service
+
+[Container]
+Image=docker.io/prometheuscommunity/postgres-exporter:v0.15.0
+ContainerName=falcon-postgres-exporter
+Network=falcon.network
+PublishPort=9187:9187
+
+# DSN via secret
+Secret=falcon-pg-dsn,type=env,target=DATA_SOURCE_NAME
+
+# Labels
+Label=project=falcon
+Label=service=postgres-exporter
+
+# Health check
+HealthCmd=wget -q --spider http://localhost:9187/metrics
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target default.target
