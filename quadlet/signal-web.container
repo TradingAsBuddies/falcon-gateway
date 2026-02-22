@@ -1,0 +1,42 @@
+# signal-web.container
+# Falcon Signal Web (Flask/Gunicorn)
+#
+# Location:
+#   - Local dev: ~/.config/containers/systemd/
+#   - Production: /etc/containers/systemd/
+#
+# Pre-requisite: Build image locally
+#   podman build -t localhost/falcon-signal-web:latest /path/to/falcon-signal-web/
+
+[Unit]
+Description=Falcon Signal Web Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=localhost/falcon-signal-web:latest
+ContainerName=falcon-signal-web
+Network=falcon.network
+PublishPort=5001:5000
+Volume=falcon-signal-web-data:/app/data:Z
+
+# Environment
+Environment=FLASK_ENV=production
+
+# Labels
+Label=project=falcon
+Label=service=signal-web
+
+# Health check
+HealthCmd=python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/status')" || exit 1
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target default.target

@@ -1,0 +1,47 @@
+# messenger.container
+# Falcon Messenger API Server (FastAPI/Uvicorn)
+#
+# Location:
+#   - Local dev: ~/.config/containers/systemd/
+#   - Production: /etc/containers/systemd/
+#
+# Pre-requisite: Build image locally
+#   podman build -t localhost/falcon-messenger:latest /path/to/falcon-messenger/
+
+[Unit]
+Description=Falcon Messenger API Server
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=localhost/falcon-messenger:latest
+ContainerName=falcon-messenger
+Network=falcon.network
+PublishPort=8085:8080
+
+# Override default command (recommendations) to run API server
+Exec=falcon-messenger serve
+
+# Secrets (create with: echo "value" | podman secret create <name> -)
+Secret=falcon-discord-webhook,type=env,target=FALCON_DISCORD_WEBHOOK_URL
+# Optional Bluesky credentials (uncomment if configured)
+#Secret=falcon-bluesky-handle,type=env,target=FALCON_BLUESKY_HANDLE
+#Secret=falcon-bluesky-password,type=env,target=FALCON_BLUESKY_APP_PASSWORD
+
+# Labels
+Label=project=falcon
+Label=service=messenger
+
+# Health check
+HealthCmd=python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target default.target

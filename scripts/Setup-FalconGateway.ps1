@@ -21,7 +21,7 @@ $ErrorActionPreference = "Stop"
 
 # Configuration
 $FalconRoot = "$env:USERPROFILE\falcon-dev"
-$ContainerNames = @("falcon-postgresql", "falcon-postgres-exporter", "falcon-redis", "falcon-consul", "falcon-traefik", "falcon-prometheus", "falcon-grafana", "falcon-website")
+$ContainerNames = @("falcon-postgresql", "falcon-postgres-exporter", "falcon-redis", "falcon-consul", "falcon-traefik", "falcon-prometheus", "falcon-grafana", "falcon-website", "falcon-messenger", "falcon-signal-web")
 $VolumeNames = @(
     "falcon-redis-data",
     "falcon-consul-data",
@@ -32,7 +32,8 @@ $VolumeNames = @(
     "falcon-grafana-data",
     "falcon-website-content",
     "falcon-postgresql-data",
-    "falcon-postgresql-init"
+    "falcon-postgresql-init",
+    "falcon-signal-web-data"
 )
 
 function Write-Info { param($msg) Write-Host "[INFO] $msg" -ForegroundColor Cyan }
@@ -441,6 +442,20 @@ function Start-FalconContainers {
         podman run -d --name falcon-website --network falcon -p 8081:80 -v falcon-website-content:/usr/share/nginx/html:ro --restart on-failure docker.io/nginx:alpine 2>$null | Out-Null
     }
     
+    # Messenger
+    $running = podman ps --format "{{.Names}}" 2>$null | Where-Object { $_ -eq "falcon-messenger" }
+    if (-not $running) {
+        Write-Host "  Starting Messenger..." -ForegroundColor Gray
+        podman run -d --name falcon-messenger --network falcon -p 8085:8080 --restart on-failure localhost/falcon-messenger:latest falcon-messenger serve 2>$null | Out-Null
+    }
+
+    # Signal Web
+    $running = podman ps --format "{{.Names}}" 2>$null | Where-Object { $_ -eq "falcon-signal-web" }
+    if (-not $running) {
+        Write-Host "  Starting Signal Web..." -ForegroundColor Gray
+        podman run -d --name falcon-signal-web --network falcon -p 5001:5000 -v falcon-signal-web-data:/app/data:Z -e FLASK_ENV=production --restart on-failure localhost/falcon-signal-web:latest 2>$null | Out-Null
+    }
+
     Start-Sleep -Seconds 3
     Write-Success "All containers started"
 }
@@ -514,7 +529,19 @@ function Show-Status {
         $null = Invoke-WebRequest -Uri "http://localhost:8081" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
         Write-Success "Website: HEALTHY (http://localhost:8081)"
     } catch { Write-Err "Website: NOT RUNNING" }
-    
+
+    # Messenger
+    try {
+        $null = Invoke-WebRequest -Uri "http://localhost:8085/health" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+        Write-Success "Messenger: HEALTHY (http://localhost:8085)"
+    } catch { Write-Err "Messenger: NOT RUNNING" }
+
+    # Signal Web
+    try {
+        $null = Invoke-WebRequest -Uri "http://localhost:5001/status" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+        Write-Success "Signal Web: HEALTHY (http://localhost:5001)"
+    } catch { Write-Err "Signal Web: NOT RUNNING" }
+
     Write-Host ""
 }
 
@@ -529,6 +556,8 @@ function Show-URLs {
     Write-Host "  Redis:              localhost:6379" -ForegroundColor White
     Write-Host "  PostgreSQL:         localhost:5432  (falcon/falcon_secret)" -ForegroundColor White
     Write-Host "  PG Metrics:         http://localhost:9187/metrics" -ForegroundColor White
+    Write-Host "  Messenger:          http://localhost:8085" -ForegroundColor White
+    Write-Host "  Signal Web:         http://localhost:5001" -ForegroundColor White
     Write-Host ""
 }
 

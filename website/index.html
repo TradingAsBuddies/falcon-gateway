@@ -112,6 +112,14 @@
                 <h3>PostgreSQL</h3>
                 <p><span class="indicator checking" id="ind-postgresql"></span>Database</p>
             </div>
+            <div class="status-card" id="card-messenger">
+                <h3>Messenger</h3>
+                <p><span class="indicator checking" id="ind-messenger"></span>Notifications</p>
+            </div>
+            <div class="status-card" id="card-signal-web">
+                <h3>Signal Web</h3>
+                <p><span class="indicator checking" id="ind-signal-web"></span>Signals</p>
+            </div>
         </div>
 
         <div class="links">
@@ -119,6 +127,8 @@
             <a href="http://localhost:8500" target="_blank">Consul UI</a>
             <a href="http://localhost:9090" target="_blank">Prometheus</a>
             <a href="http://localhost:3000" target="_blank">Grafana</a>
+            <a href="http://localhost:8085" target="_blank">Messenger</a>
+            <a href="http://localhost:5001" target="_blank">Signal Web</a>
         </div>
 
         <div class="arch">
@@ -162,7 +172,9 @@
                 { id: 'traefik', url: 'http://localhost:8080/ping' },
                 { id: 'consul', url: 'http://localhost:8500/v1/status/leader' },
                 { id: 'prometheus', url: 'http://localhost:9090/-/healthy' },
-                { id: 'grafana', url: 'http://localhost:3000/api/health' }
+                { id: 'grafana', url: 'http://localhost:3000/api/health' },
+                { id: 'messenger', url: 'http://localhost:8085/health' },
+                { id: 'signal-web', url: 'http://localhost:5001/status' }
             ];
 
             for (const check of checks) {
@@ -178,6 +190,7 @@
             // Redis and PostgreSQL can't be checked from browser, assume OK
             document.getElementById('ind-redis').className = 'indicator';
             document.getElementById('ind-postgresql').className = 'indicator';
+            // Messenger and Signal Web checked via fetch above
         }
 
         // Run health checks on load and every 30s

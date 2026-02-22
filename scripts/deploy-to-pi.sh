@@ -75,6 +75,8 @@ ssh "$TARGET" "
     sudo systemctl enable --now falcon-prometheus.service
     sudo systemctl enable --now falcon-grafana.service
     sudo systemctl enable --now falcon-website.service
+    sudo systemctl enable --now falcon-messenger.service
+    sudo systemctl enable --now falcon-signal-web.service
 "
 
 # Wait and check status
@@ -97,4 +99,6 @@ echo "  Prometheus: http://${TARGET#*@}:9090"
 echo "  Grafana:    http://${TARGET#*@}:3000"
 echo "  PostgreSQL: ${TARGET#*@}:5432"
 echo "  PG Metrics: http://${TARGET#*@}:9187/metrics"
+echo "  Messenger:  http://${TARGET#*@}:8085"
+echo "  Signal Web: http://${TARGET#*@}:5001"
 echo ""
