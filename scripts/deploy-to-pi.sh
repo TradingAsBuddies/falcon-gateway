@@ -74,6 +74,7 @@ ssh "$TARGET" "
     sudo systemctl enable --now falcon-traefik.service
     sudo systemctl enable --now falcon-prometheus.service
     sudo systemctl enable --now falcon-grafana.service
+    sudo systemctl enable --now falcon-website.service
 "
 
 # Wait and check status
