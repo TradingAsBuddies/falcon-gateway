@@ -1,0 +1,36 @@
+# website.container
+# Falcon Gateway Dashboard
+#
+# Location:
+#   - Local dev: ~/.config/containers/systemd/
+#   - Production: /etc/containers/systemd/
+
+[Unit]
+Description=Falcon Gateway Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/nginx:alpine
+ContainerName=falcon-website
+Network=falcon.network
+PublishPort=8081:80
+Volume=falcon-website-content:/usr/share/nginx/html:ro
+
+# Labels
+Label=project=falcon
+Label=service=website
+
+# Health check
+HealthCmd=wget -q --spider http://localhost:80 || exit 1
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target default.target
