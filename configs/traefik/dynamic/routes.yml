@@ -21,6 +21,8 @@ http:
       service: website-svc
       entryPoints:
         - web
+      middlewares:
+        - dashboard-auth
 
     # Traefik Dashboard (internal)
     traefik-api:
@@ -28,6 +30,8 @@ http:
       service: api@internal
       entryPoints:
         - web
+      middlewares:
+        - dashboard-auth
 
     # Consul UI
     consul:
@@ -35,6 +39,8 @@ http:
       service: consul-svc
       entryPoints:
         - web
+      middlewares:
+        - dashboard-auth
 
     # Prometheus
     prometheus:
@@ -42,6 +48,8 @@ http:
       service: prometheus-svc
       entryPoints:
         - web
+      middlewares:
+        - dashboard-auth
 
     # Grafana
     grafana:
@@ -49,6 +57,8 @@ http:
       service: grafana-svc
       entryPoints:
         - web
+      middlewares:
+        - dashboard-auth
 
     # ------------------------------------------------
     # LAN path routers
@@ -68,6 +78,7 @@ http:
       entryPoints:
         - web
       middlewares:
+        - dashboard-auth
         - strip-grafana
 
     prometheus-path:
@@ -77,6 +88,7 @@ http:
       entryPoints:
         - web
       middlewares:
+        - dashboard-auth
         - strip-prometheus
 
     consul-path:
@@ -86,6 +98,7 @@ http:
       entryPoints:
         - web
       middlewares:
+        - dashboard-auth
         - strip-consul
 
     # ------------------------------------------------
@@ -162,6 +175,11 @@ http:
     dashboard-auth:
       basicAuth:
         usersFile: /etc/traefik/dynamic/users.htpasswd
+        # Strip the Basic credentials before proxying. falcon-trader's own auth
+        # also reads Authorization, and a Basic header there is not a bearer
+        # token -- so scripts going through the gateway must send their Falcon
+        # token as X-Falcon-Token, not Authorization. Documented in README.
+        removeHeader: true
 
     # Prefix stripping for the LAN path routers
     strip-grafana:

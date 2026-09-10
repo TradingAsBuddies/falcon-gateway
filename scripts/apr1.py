@@ -22,8 +22,12 @@ Algorithm: the original Apache/FreeBSD md5crypt, as described in
 `crypt-md5.c`. Deterministic for a given (password, salt).
 
 Usage:
-    python3 apr1.py USERNAME PASSWORD      -> "user:$apr1$salt$hash"
+    printf '%s' "$PASSWORD" | python3 apr1.py --stdin USERNAME
     python3 apr1.py --selftest
+
+The password is read from stdin, never taken as an argument: an argument is
+visible in `ps` to every user on the host, which is the same exposure that
+falcon-trader#25 removed from the dashboard's API keys.
 """
 
 from __future__ import annotations
@@ -166,13 +170,20 @@ def main(argv) -> int:
     if len(argv) == 2 and argv[1] == "--vector":
         print(apr1("password", "12345678"))
         return 0
-    if len(argv) != 3:
-        print(__doc__.strip().splitlines()[-3].strip(), file=sys.stderr)
-        print("usage: apr1.py USERNAME PASSWORD | --selftest | --vector",
-              file=sys.stderr)
-        return 2
-    print(htpasswd_line(argv[1], argv[2]))
-    return 0
+    if len(argv) == 3 and argv[1] == "--stdin":
+        # Password on stdin. Never accept it as an argument -- `ps` exposes
+        # argv to every user on the host.
+        password = sys.stdin.readline().rstrip("\n")
+        if not password:
+            print("error: empty password on stdin", file=sys.stderr)
+            return 2
+        print(htpasswd_line(argv[2], password))
+        return 0
+
+    print("usage: printf '%s' \"$PASSWORD\" | apr1.py --stdin USERNAME",
+          file=sys.stderr)
+    print("       apr1.py --selftest | --vector", file=sys.stderr)
+    return 2
 
 
 if __name__ == "__main__":

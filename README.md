@@ -25,6 +25,12 @@
 >
 > Also set `GRAFANA_ADMIN_PASSWORD` in the environment. `grafana.container`
 > previously carried `GF_SECURITY_ADMIN_PASSWORD=falcon123` in git.
+>
+> **Through the gateway, scripts must send the Falcon token as
+> `X-Falcon-Token`, not `Authorization: Bearer`.** Traefik's basicAuth claims
+> the `Authorization` header, so a bearer token is rejected at the gateway
+> before Flask sees it. The `Authorization: Bearer` form works only when
+> talking to falcon-trader directly on `:5000`.
 
 
 Infrastructure gateway stack for the Falcon Trading Platform. Provides API routing, service discovery, message queuing, and observability.
