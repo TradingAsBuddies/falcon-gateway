@@ -432,7 +432,7 @@ function Start-FalconContainers {
     $running = podman ps --format "{{.Names}}" 2>$null | Where-Object { $_ -eq "falcon-grafana" }
     if (-not $running) {
         Write-Host "  Starting Grafana..." -ForegroundColor Gray
-        podman run -d --name falcon-grafana --network falcon -p 3000:3000 -v falcon-grafana-data:/var/lib/grafana -e GF_SECURITY_ADMIN_PASSWORD=falcon123 -e GF_USERS_ALLOW_SIGN_UP=false --restart on-failure docker.io/grafana/grafana:10.2.0 2>$null | Out-Null
+        podman run -d --name falcon-grafana --network falcon -p 3000:3000 -v falcon-grafana-data:/var/lib/grafana -e GF_SECURITY_ADMIN_PASSWORD=$env:GRAFANA_ADMIN_PASSWORD -e GF_USERS_ALLOW_SIGN_UP=false --restart on-failure docker.io/grafana/grafana:10.2.0 2>$null | Out-Null
     }
     
     # Website
@@ -552,7 +552,7 @@ function Show-URLs {
     Write-Host "  Traefik Dashboard:  http://localhost:8080" -ForegroundColor White
     Write-Host "  Consul UI:          http://localhost:8500" -ForegroundColor White
     Write-Host "  Prometheus:         http://localhost:9090" -ForegroundColor White
-    Write-Host "  Grafana:            http://localhost:3000  (admin/falcon123)" -ForegroundColor White
+    Write-Host "  Grafana:            http://localhost:3000  (admin / $env:GRAFANA_ADMIN_PASSWORD)" -ForegroundColor White
     Write-Host "  Redis:              localhost:6379" -ForegroundColor White
     Write-Host "  PostgreSQL:         localhost:5432  (falcon/falcon_secret)" -ForegroundColor White
     Write-Host "  PG Metrics:         http://localhost:9187/metrics" -ForegroundColor White

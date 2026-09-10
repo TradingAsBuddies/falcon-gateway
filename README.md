@@ -145,7 +145,7 @@ falcon-gateway/
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `FALCON_DOMAIN` | `localhost` | Domain for TLS certificates |
-| `GRAFANA_ADMIN_PASSWORD` | `falcon123` | Grafana admin password |
+| `GRAFANA_ADMIN_PASSWORD` | *(none — required)* | Grafana admin password. Must be set; there is deliberately no default. |
 | `ACME_EMAIL` | - | Email for Let's Encrypt |
 
 ### Traefik Routes
@@ -216,7 +216,7 @@ curl -X PUT http://falcon-gateway:8500/v1/agent/service/register \
 
 ### Grafana Dashboards
 
-Default credentials: `admin` / `falcon123`
+Credentials: `admin` / the value of `GRAFANA_ADMIN_PASSWORD`. There is no default.
 
 Pre-configured dashboards:
 - Falcon Overview
