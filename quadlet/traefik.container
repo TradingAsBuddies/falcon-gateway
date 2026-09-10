@@ -16,14 +16,18 @@ ContainerName=falcon-traefik
 Network=falcon.network
 
 # Ports
+# 8880 is the LAN-facing publish for the `web` entrypoint (:80 inside the
+# container). Declared here so it lives in git rather than out-of-band in
+# Podman Desktop / a manual `-p 8880:80`.
 PublishPort=80:80
+PublishPort=8880:80
 PublishPort=443:443
 PublishPort=8080:8080
 
 # Configuration volumes
 # Local: uses Podman volumes
 # Production: mount from /etc/falcon/traefik
-Volume=falcon-traefik-config:/etc/traefik:ro
+Volume=falcon-traefik-config:/etc/traefik:ro,Z
 Volume=falcon-traefik-certs:/certs
 
 # Labels

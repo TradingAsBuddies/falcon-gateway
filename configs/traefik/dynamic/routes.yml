@@ -12,6 +12,8 @@ http:
       service: dashboard-svc
       entryPoints:
         - web
+      middlewares:
+        - dashboard-auth
 
     # Infrastructure Admin (status page)
     admin:
@@ -48,6 +50,59 @@ http:
       entryPoints:
         - web
 
+    # ------------------------------------------------
+    # LAN path routers
+    #
+    # Reachable as http://<lan-ip>:8880/<tool> from machines where the
+    # *.localhost Host() rules above do not resolve.
+    #
+    # Explicit priority 10: above the catch-all (1) so these win for their
+    # own prefixes, and below every Host() router (Traefik derives those
+    # priorities from rule length, the shortest here being 24) so existing
+    # hostname routing is unchanged.
+    # ------------------------------------------------
+    grafana-path:
+      rule: "PathPrefix(`/grafana`)"
+      priority: 10
+      service: grafana-svc
+      entryPoints:
+        - web
+      middlewares:
+        - strip-grafana
+
+    prometheus-path:
+      rule: "PathPrefix(`/prometheus`)"
+      priority: 10
+      service: prometheus-svc
+      entryPoints:
+        - web
+      middlewares:
+        - strip-prometheus
+
+    consul-path:
+      rule: "PathPrefix(`/consul`)"
+      priority: 10
+      service: consul-svc
+      entryPoints:
+        - web
+      middlewares:
+        - strip-consul
+
+    # ------------------------------------------------
+    # LAN catch-all -- MUST remain the lowest-priority router.
+    # Anything not claimed by a Host() or path router above falls through
+    # to the trading dashboard, so http://<lan-ip>:8880/ answers instead
+    # of returning Traefik's default 404.
+    # ------------------------------------------------
+    lan-catchall:
+      rule: "PathPrefix(`/`)"
+      priority: 1
+      service: dashboard-svc
+      entryPoints:
+        - web
+      middlewares:
+        - dashboard-auth
+
   # ============================================
   # SERVICES
   # ============================================
@@ -75,7 +130,9 @@ http:
     dashboard-svc:
       loadBalancer:
         servers:
-          - url: "http://falcon-dashboard:5000"
+          # falcon-trader ships the Flask dashboard under the container
+          # name falcon-trader; there is no falcon-dashboard container.
+          - url: "http://falcon-trader:5000"
 
   # ============================================
   # MIDDLEWARES
@@ -97,3 +154,27 @@ http:
         browserXssFilter: true
         referrerPolicy: "strict-origin-when-cross-origin"
         frameDeny: true
+
+    # Basic auth in front of the trading dashboard (falcon-trader#25).
+    # The users file is NOT in git. Copy users.htpasswd.example to
+    # users.htpasswd next to this file and generate real entries with:
+    #   htpasswd -nbB <user> <password>
+    dashboard-auth:
+      basicAuth:
+        usersFile: /etc/traefik/dynamic/users.htpasswd
+
+    # Prefix stripping for the LAN path routers
+    strip-grafana:
+      stripPrefix:
+        prefixes:
+          - /grafana
+
+    strip-prometheus:
+      stripPrefix:
+        prefixes:
+          - /prometheus
+
+    strip-consul:
+      stripPrefix:
+        prefixes:
+          - /consul
