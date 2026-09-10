@@ -1,5 +1,32 @@
 # Falcon Gateway
 
+> ## ⚠️ Required before deploying this branch
+>
+> The `dashboard-auth` middleware added for falcon-gateway#1 reads
+> `/etc/traefik/dynamic/users.htpasswd`. **Traefik refuses to load a basicAuth
+> middleware whose usersFile is missing**, and both the `dashboard` and
+> `lan-catchall` routers reference it — so if that file is absent the trading
+> dashboard is *unreachable*, not merely unauthenticated.
+>
+> ```bash
+> ./scripts/generate-htpasswd.sh falcon        # prompts for a password
+> ```
+>
+> Then copy it into the Traefik config volume at `dynamic/users.htpasswd` and
+> confirm Traefik loaded it before trusting the deploy:
+>
+> ```bash
+> podman logs falcon-traefik 2>&1 | grep -i 'middleware\|htpasswd'
+> ```
+>
+> The script uses `htpasswd -nbB` (bcrypt) when available, then `openssl`, then
+> a pure-Python APR1 fallback — so it works on a host with neither installed.
+> The generated file is gitignored; never commit it.
+>
+> Also set `GRAFANA_ADMIN_PASSWORD` in the environment. `grafana.container`
+> previously carried `GF_SECURITY_ADMIN_PASSWORD=falcon123` in git.
+
+
 Infrastructure gateway stack for the Falcon Trading Platform. Provides API routing, service discovery, message queuing, and observability.
 
 ## Architecture

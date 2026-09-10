@@ -23,7 +23,10 @@ Volume=falcon-prometheus-config:/etc/prometheus:ro
 Volume=falcon-prometheus-data:/prometheus:Z
 
 # Prometheus startup args
-Exec=--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.time=15d --web.enable-lifecycle
+# --web.external-url/--web.route-prefix make Prometheus generate URLs under
+# /prometheus so the stripPrefix router works; without them its redirects land
+# on "/" and are swallowed by lan-catchall (falcon-gateway#1).
+Exec=--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.time=15d --web.enable-lifecycle --web.external-url=/prometheus/ --web.route-prefix=/prometheus/
 
 # Labels
 Label=project=falcon
