@@ -23,16 +23,28 @@ Volume=falcon-grafana-data:/var/lib/grafana:Z
 # Volume=/etc/falcon/grafana/provisioning:/etc/grafana/provisioning:ro
 
 # Environment
-# Admin password comes from the environment, never from git. Set it in the
-# unit's EnvironmentFile or a podman secret. It was committed here as
-# "falcon123" (falcon-gateway#1 review).
-Environment=GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+#
+# Secrets and the external URL come from this file, not from git. The `-`
+# prefix makes it optional so the unit still starts without it -- but Grafana
+# then falls back to admin/admin, so create it before exposing the gateway.
+#   /etc/falcon/gateway.env   (see gateway.env.example)
+EnvironmentFile=-/etc/falcon/gateway.env
+
+# NOTE: systemd does NOT expand variables inside Environment=. An earlier
+# revision here set GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD},
+# which passes that string to Grafana *literally*. The password must therefore
+# be supplied by EnvironmentFile as GF_SECURITY_ADMIN_PASSWORD itself.
 Environment=GF_USERS_ALLOW_SIGN_UP=false
 
-# Serve correctly behind the /grafana stripPrefix router. Without these two,
+# Serve correctly behind the /grafana stripPrefix router. Without these,
 # Grafana emits absolute asset and redirect URLs rooted at "/", which the
 # lan-catchall router then hands to the trading dashboard.
-Environment=GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:%(http_port)s/grafana/
+#
+# %(protocol)s / %(domain)s are Grafana's OWN ini-file interpolation syntax and
+# are not valid in a systemd unit -- systemd reads % as a specifier prefix and
+# fails to start on the unknown specifier. The URL must be a literal. Override
+# GF_SERVER_ROOT_URL in gateway.env with the address the LAN actually uses.
+Environment=GF_SERVER_ROOT_URL=http://localhost:8880/grafana/
 Environment=GF_SERVER_SERVE_FROM_SUB_PATH=true
 
 # Labels

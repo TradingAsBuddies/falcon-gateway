@@ -23,8 +23,13 @@
 > a pure-Python APR1 fallback — so it works on a host with neither installed.
 > The generated file is gitignored; never commit it.
 >
-> Also set `GRAFANA_ADMIN_PASSWORD` in the environment. `grafana.container`
-> previously carried `GF_SECURITY_ADMIN_PASSWORD=falcon123` in git.
+> Also create `/etc/falcon/gateway.env` from `quadlet/gateway.env.example`
+> (chmod 600). It supplies `GF_SECURITY_ADMIN_PASSWORD` and
+> `GF_SERVER_ROOT_URL`. **systemd performs no variable expansion inside
+> `Environment=`**, so each value must appear under its final name in that
+> file — an earlier revision set
+> `GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}`, which hands Grafana
+> that string literally. Without the file Grafana falls back to admin/admin.
 >
 > **Through the gateway, scripts must send the Falcon token as
 > `X-Falcon-Token`, not `Authorization: Bearer`.** Traefik's basicAuth claims
@@ -151,7 +156,8 @@ falcon-gateway/
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `FALCON_DOMAIN` | `localhost` | Domain for TLS certificates |
-| `GRAFANA_ADMIN_PASSWORD` | *(none — required)* | Grafana admin password. Must be set; there is deliberately no default. |
+| `GF_SECURITY_ADMIN_PASSWORD` | *(none — required)* | Grafana admin password, set in `/etc/falcon/gateway.env`. No default; without it Grafana uses admin/admin. |
+| `GF_SERVER_ROOT_URL` | `http://localhost:8880/grafana/` | External URL including the sub-path. Must match what LAN clients use. |
 | `ACME_EMAIL` | - | Email for Let's Encrypt |
 
 ### Traefik Routes
