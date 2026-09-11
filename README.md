@@ -1,5 +1,43 @@
 # Falcon Gateway
 
+> ## ⚠️ Required before deploying this branch
+>
+> The `dashboard-auth` middleware added for falcon-gateway#1 reads
+> `/etc/traefik/dynamic/users.htpasswd`. **Traefik refuses to load a basicAuth
+> middleware whose usersFile is missing**, and both the `dashboard` and
+> `lan-catchall` routers reference it — so if that file is absent the trading
+> dashboard is *unreachable*, not merely unauthenticated.
+>
+> ```bash
+> ./scripts/generate-htpasswd.sh falcon        # prompts for a password
+> ```
+>
+> Then copy it into the Traefik config volume at `dynamic/users.htpasswd` and
+> confirm Traefik loaded it before trusting the deploy:
+>
+> ```bash
+> podman logs falcon-traefik 2>&1 | grep -i 'middleware\|htpasswd'
+> ```
+>
+> The script uses `htpasswd -nbB` (bcrypt) when available, then `openssl`, then
+> a pure-Python APR1 fallback — so it works on a host with neither installed.
+> The generated file is gitignored; never commit it.
+>
+> Also create `/etc/falcon/gateway.env` from `quadlet/gateway.env.example`
+> (chmod 600). It supplies `GF_SECURITY_ADMIN_PASSWORD` and
+> `GF_SERVER_ROOT_URL`. **systemd performs no variable expansion inside
+> `Environment=`**, so each value must appear under its final name in that
+> file — an earlier revision set
+> `GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}`, which hands Grafana
+> that string literally. Without the file Grafana falls back to admin/admin.
+>
+> **Through the gateway, scripts must send the Falcon token as
+> `X-Falcon-Token`, not `Authorization: Bearer`.** Traefik's basicAuth claims
+> the `Authorization` header, so a bearer token is rejected at the gateway
+> before Flask sees it. The `Authorization: Bearer` form works only when
+> talking to falcon-trader directly on `:5000`.
+
+
 Infrastructure gateway stack for the Falcon Trading Platform. Provides API routing, service discovery, message queuing, and observability.
 
 ## Architecture
@@ -118,7 +156,8 @@ falcon-gateway/
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `FALCON_DOMAIN` | `localhost` | Domain for TLS certificates |
-| `GRAFANA_ADMIN_PASSWORD` | `falcon123` | Grafana admin password |
+| `GF_SECURITY_ADMIN_PASSWORD` | *(none — required)* | Grafana admin password, set in `/etc/falcon/gateway.env`. No default; without it Grafana uses admin/admin. |
+| `GF_SERVER_ROOT_URL` | `http://localhost:8880/grafana/` | External URL including the sub-path. Must match what LAN clients use. |
 | `ACME_EMAIL` | - | Email for Let's Encrypt |
 
 ### Traefik Routes
@@ -189,7 +228,7 @@ curl -X PUT http://falcon-gateway:8500/v1/agent/service/register \
 
 ### Grafana Dashboards
 
-Default credentials: `admin` / `falcon123`
+Credentials: `admin` / the value of `GRAFANA_ADMIN_PASSWORD`. There is no default.
 
 Pre-configured dashboards:
 - Falcon Overview
