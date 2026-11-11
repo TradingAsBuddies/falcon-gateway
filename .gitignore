@@ -51,3 +51,7 @@ node_modules/
 # Local development overrides
 configs/traefik/dynamic/local-*.yml
 configs/local/
+
+# Basic-auth users file for the dashboard-auth middleware (never commit)
+configs/traefik/dynamic/users.htpasswd
+!configs/traefik/dynamic/users.htpasswd.example

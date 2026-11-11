@@ -19,7 +19,8 @@ PublishPort=8600:8600/udp
 Volume=falcon-consul-data:/consul/data:Z
 
 # Dev mode for single-node; use server mode for production cluster
-Exec=agent -dev -ui -client=0.0.0.0 -bind=0.0.0.0
+# -ui-content-path matches the /consul stripPrefix router (falcon-gateway#1).
+Exec=agent -dev -ui -client=0.0.0.0 -bind=0.0.0.0 -ui-content-path=/consul
 
 # Labels
 Label=project=falcon

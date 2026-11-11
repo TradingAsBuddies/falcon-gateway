@@ -3,7 +3,10 @@
 
 api:
   dashboard: true
-  insecure: true  # Set to false in production with proper auth
+  # insecure: false keeps the API off the :8080 entrypoint. The dashboard
+  # is reachable only through the traefik-api router (api@internal) in
+  # dynamic/routes.yml. Note that :8080 still serves /ping (see below).
+  insecure: false
 
 entryPoints:
   web:
